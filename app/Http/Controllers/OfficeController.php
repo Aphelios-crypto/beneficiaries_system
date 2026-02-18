@@ -30,6 +30,14 @@ class OfficeController extends Controller
 
         $offices = $result['data'] ?? [];
 
+        // Fetch employees to find the linking field
+        $empResult = $this->ihris->getEmployees($token);
+        $employees = $empResult['data'] ?? [];
+
+        if (!empty($employees)) {
+            \Illuminate\Support\Facades\Log::info('First Employee Structure:', (array)$employees[0]);
+        }
+
         // Client-side search filter
         if ($search) {
             $offices = array_filter($offices, function ($office) use ($search) {
@@ -43,5 +51,21 @@ class OfficeController extends Controller
             'error'   => $result['success'] ? null : $result['message'],
             'search'  => $search,
         ]);
+    }
+
+    /**
+     * Fetch API-sourced list of employees assigned to a specific office.
+     */
+    public function employees(string $id)
+    {
+        $token = \Illuminate\Support\Facades\Auth::user()->ihris_token;
+        if (! $token) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Attempt 1: Standard RESTful nested resource (common in iHRIS implementations)
+        $result = $this->ihris->get("/offices/{$id}/employees", $token);
+
+        return response()->json(['employees' => $result['data'] ?? []]);
     }
 }

@@ -19,6 +19,7 @@ Route::middleware([
 
     // Offices Management — all authenticated users
     Route::get('/offices', [OfficeController::class, 'index'])->name('offices.index');
+    Route::get('/offices/{id}/employees', [OfficeController::class, 'employees'])->name('offices.employees');
 
     // User Management — Super Admin and Admin only
     Route::middleware('role:Super Admin|Admin')->group(function () {
