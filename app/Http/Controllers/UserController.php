@@ -53,7 +53,10 @@ class UserController extends Controller
                     $haystack = strtolower(
                         ($emp['name'] ?? '') . ' ' .
                         ($emp['first_name'] ?? '') . ' ' .
+                        ($emp['middle_name'] ?? '') . ' ' .
                         ($emp['last_name'] ?? '') . ' ' .
+                        ($emp['surname'] ?? '') . ' ' .
+                        ($emp['extension'] ?? '') . ' ' .
                         ($emp['email'] ?? '') . ' ' .
                         ($emp['id'] ?? '') . ' ' .
                         ($emp['employee_id'] ?? '')
@@ -89,5 +92,72 @@ class UserController extends Controller
         $user->syncRoles([$request->role]);
 
         return back()->with('success', "Role updated to \"{$request->role}\" for {$user->name}.");
+    }
+
+    /**
+     * Store a newly created user in storage.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role'     => ['required', 'string', 'exists:roles,name'],
+        ]);
+
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => $request->password, // Casts to hashed automatically in User model
+        ]);
+
+        $user->assignRole($request->role);
+
+        return back()->with('success', "User \"{$user->name}\" created successfully.");
+    }
+
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(Request $request, User $user)
+    {
+        $rules = [
+            'name'  => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'role'  => ['required', 'string', 'exists:roles,name'],
+        ];
+
+        if ($request->filled('password')) {
+            $rules['password'] = ['required', 'string', 'min:8', 'confirmed'];
+        }
+
+        $request->validate($rules);
+
+        $user->name  = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = $request->password;
+        }
+
+        $user->save();
+        $user->syncRoles([$request->role]);
+
+        return back()->with('success', "User \"{$user->name}\" updated successfully.");
+    }
+
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy(User $user)
+    {
+        if ($user->id === Auth::id()) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        $user->delete();
+
+        return back()->with('success', "User \"{$user->name}\" deleted successfully.");
     }
 }

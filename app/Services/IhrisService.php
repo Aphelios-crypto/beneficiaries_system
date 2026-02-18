@@ -141,6 +141,20 @@ class IhrisService
      */
     public function get(string $endpoint, string $token, array $query = []): array
     {
+        // Wrapper for the new generic send method
+        return $this->send('get', $endpoint, $token, $query);
+    }
+
+    /**
+     * Generic authenticated GET helper. (Deprecated, use send instead)
+     *
+     * @param  string  $endpoint  Relative endpoint (e.g. '/employees')
+     * @param  string  $token
+     * @param  array   $query     Optional query parameters
+     * @return array{success: bool, data: array, message: string}
+     */
+    public function oldGet(string $endpoint, string $token, array $query = []): array
+    {
         $url = $this->baseUrl . $endpoint;
 
         try {
@@ -180,6 +194,100 @@ class IhrisService
             return [
                 'success' => false,
                 'data'    => [],
+                'message' => 'Could not connect to the iHRIS server.',
+            ];
+        }
+    }
+    /**
+     * Create a new employee in iHRIS.
+     *
+     * @param  string  $token
+     * @param  array   $data
+     * @return array{success: bool, message: string, data?: array}
+     */
+    public function createEmployee(string $token, array $data): array
+    {
+        return $this->send('post', '/employees', $token, $data);
+    }
+
+    /**
+     * Update an existing employee in iHRIS.
+     *
+     * @param  string  $token
+     * @param  string  $id
+     * @param  array   $data
+     * @return array{success: bool, message: string, data?: array}
+     */
+    public function updateEmployee(string $token, string $id, array $data): array
+    {
+        return $this->send('put', "/employees/{$id}", $token, $data);
+    }
+
+    /**
+     * Delete an employee from iHRIS.
+     *
+     * @param  string  $token
+     * @param  string  $id
+     * @return array{success: bool, message: string}
+     */
+    public function deleteEmployee(string $token, string $id): array
+    {
+        return $this->send('delete', "/employees/{$id}", $token);
+    }
+
+    /**
+     * Generic authenticated request helper.
+     *
+     * @param  string  $method    get|post|put|delete
+     * @param  string  $endpoint  Relative endpoint
+     * @param  string  $token
+     * @param  array   $data      Body or Query parameters
+     * @return array
+     */
+    public function send(string $method, string $endpoint, string $token, array $data = []): array
+    {
+        $url = $this->baseUrl . $endpoint;
+
+        try {
+            $request = Http::timeout(30)
+                ->withToken($token)
+                ->acceptJson();
+
+            $response = match (strtolower($method)) {
+                'post'   => $request->post($url, $data),
+                'put'    => $request->put($url, $data),
+                'delete' => $request->delete($url, $data),
+                default  => $request->get($url, $data),
+            };
+
+            if ($response->successful()) {
+                $body = $response->json();
+                return [
+                    'success' => true,
+                    'data'    => $body['data'] ?? $body,
+                    'message' => 'Success',
+                ];
+            }
+
+            $body    = $response->json();
+            $message = $body['message'] ?? $body['error'] ?? 'Request failed.';
+
+            Log::warning("iHRIS {$method} {$endpoint} failed.", [
+                'status'  => $response->status(),
+                'message' => $message,
+                'data'    => $data
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $message,
+            ];
+
+        } catch (\Throwable $e) {
+            Log::error("iHRIS {$method} {$endpoint} error.", ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
                 'message' => 'Could not connect to the iHRIS server.',
             ];
         }

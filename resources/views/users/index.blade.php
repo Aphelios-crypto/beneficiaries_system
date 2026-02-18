@@ -42,7 +42,7 @@
                                 </svg>
                             </div>
                             <input type="text" name="search" value="{{ $search }}"
-                                   placeholder="Search by name or email..."
+                                   placeholder="Search users or employees..."
                                    class="lgu-input pl-10" />
                         </div>
                         <button type="submit" class="btn-lgu">Search</button>
@@ -68,8 +68,37 @@
             </div>
 
             {{-- ── System Users Table ── --}}
-            <div class="card">
-                <div class="card-header">
+            <div class="card" x-data="{
+                userModalOpen: {{ $errors->any() ? 'true' : 'false' }},
+                isEdit: {{ old('_method') === 'PATCH' ? 'true' : 'false' }},
+                form: {
+                    id: '{{ old('id') }}',
+                    name: '{{ old('name') }}',
+                    email: '{{ old('email') }}',
+                    role: '{{ old('role', 'Employee') }}',
+                },
+                actionUrl: '{{ old('_method') === 'PATCH' && old('id') ? route('users.update', old('id')) : route('users.store') }}',
+                
+                openCreate() {
+                    this.isEdit = false;
+                    this.form = { id: null, name: '', email: '', role: 'Employee' };
+                    this.actionUrl = '{{ route("users.store") }}';
+                    this.userModalOpen = true;
+                },
+                openEdit(user) {
+                    this.isEdit = true;
+                    this.form = {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.roles && user.roles.length > 0 ? user.roles[0].name : 'Employee'
+                    };
+                    // Construct update URL dynamically 
+                    this.actionUrl = '{{ route("users.index") }}/' + user.id;
+                    this.userModalOpen = true;
+                }
+            }">
+                <div class="card-header flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 rounded-lg bg-lgu-blue flex items-center justify-center">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,6 +108,13 @@
                         <h3 class="font-semibold text-gray-800">System Users</h3>
                         <span class="badge badge-blue ml-1">{{ $users->count() }}</span>
                     </div>
+
+                    @can('manage-users')
+                    <button @click="openCreate()" class="btn-lgu text-sm py-1.5 px-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Add User
+                    </button>
+                    @endcan
                 </div>
 
                 @if($users->count() > 0)
@@ -92,7 +128,7 @@
                                     <th>Role</th>
                                     <th>Account Type</th>
                                     @can('manage-users')
-                                    <th>Change Role</th>
+                                    <th class="text-right">Actions</th>
                                     @endcan
                                 </tr>
                             </thead>
@@ -144,22 +180,23 @@
                                             @endif
                                         </td>
                                         @can('manage-users')
-                                        <td>
+                                        <td class="text-right">
                                             @if(auth()->id() !== $user->id)
-                                                <form method="POST" action="{{ route('users.update-role', $user) }}" class="flex items-center gap-2">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <select name="role" class="border border-gray-300 rounded-lg text-xs px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-lgu-blue focus:border-transparent bg-white">
-                                                        @foreach($roles as $r)
-                                                            <option value="{{ $r->name }}" {{ optional($user->roles->first())->name === $r->name ? 'selected' : '' }}>
-                                                                {{ $r->name }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="submit" class="btn-lgu text-xs px-3 py-1.5">Save</button>
-                                                </form>
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <button @click="openEdit({{ $user->load('roles') }})" 
+                                                            class="p-1.5 text-gray-400 hover:text-lgu-blue transition rounded-lg hover:bg-lgu-blue/10" title="Edit">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                    </button>
+                                                    <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 transition rounded-lg hover:bg-red-50" title="Delete">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             @else
-                                                <span class="text-xs text-gray-400 italic">Cannot edit own role</span>
+                                                <span class="text-xs text-gray-400 italic">Current User</span>
                                             @endif
                                         </td>
                                         @endcan
@@ -178,14 +215,133 @@
                         <p class="font-semibold text-gray-500">No users found</p>
                     </div>
                 @endif
+
+                {{-- User Modal --}}
+                <div
+                    x-show="userModalOpen"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style="display:none"
+                    @keydown.escape.window="userModalOpen = false"
+                >
+                    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="userModalOpen = false"></div>
+
+                    <div
+                        x-show="userModalOpen"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+                    >
+                        <div class="bg-lgu-blue px-6 py-4 flex items-center justify-between">
+                            <h3 class="font-bold text-white text-lg" x-text="isEdit ? 'Edit User' : 'Create New User'"></h3>
+                            <button @click="userModalOpen = false" class="text-white/70 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        
+                        <form method="POST" :action="actionUrl" class="p-6 space-y-4">
+                            @csrf
+                            <input type="hidden" name="_method" :value="isEdit ? 'PATCH' : 'POST'">
+                            <input type="hidden" name="id" x-model="form.id">
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <input type="text" name="name" x-model="form.name" required class="lgu-input w-full" placeholder="Full Name">
+                                @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" x-model="form.email" required class="lgu-input w-full" placeholder="email@example.com">
+                                @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                <select name="role" x-model="form.role" class="lgu-input w-full">
+                                    @foreach($roles as $r)
+                                        <option value="{{ $r->name }}">{{ $r->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('role') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <hr class="border-gray-100 my-2">
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <span x-text="isEdit ? 'New Password (Optional)' : 'Password'"></span>
+                                </label>
+                                <input type="password" name="password" class="lgu-input w-full" placeholder="••••••••" :required="!isEdit">
+                                @error('password') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                <input type="password" name="password_confirmation" class="lgu-input w-full" placeholder="••••••••" :required="!isEdit">
+                            </div>
+
+                            <div class="pt-2 flex justify-end gap-3">
+                                <button type="button" @click="userModalOpen = false" class="btn-outline">Cancel</button>
+                                <button type="submit" class="btn-lgu" x-text="isEdit ? 'Save Changes' : 'Create User'"></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
             {{-- ── iHRIS Employees Card Grid ── --}}
             @if($empTotal > 0)
-            <div class="card" x-data="{ modalOpen: false, modalEmp: {} }">
+            <div class="card" x-data="{
+                empModalOpen: false,
+                isEdit: false,
+                empForm: {
+                    id: null,
+                    first_name: '',
+                    middle_name: '',
+                    last_name: '',
+                    extension: '',
+                    email: ''
+                },
+                empActionUrl: '{{ route('employees.store') }}',
+
+                openCreateEmp() {
+                    this.isEdit = false;
+                    this.empForm = { id: null, first_name: '', middle_name: '', last_name: '', extension: '', email: '' };
+                    this.empActionUrl = '{{ route('employees.store') }}';
+                    this.empModalOpen = true;
+                },
+                openEditEmp(emp) {
+                    this.isEdit = true;
+                    // Map API fields to form
+                    this.empForm = {
+                        id: emp.id || emp.employee_id,
+                        first_name: emp.first_name || emp.name,
+                        middle_name: emp.middle_name || '',
+                        last_name: emp.last_name || emp.surname,
+                        extension: emp.extension || '',
+                        email: emp.email || ''
+                    };
+                    this.empActionUrl = '{{ route("employees.store") }}/' + this.empForm.id; // Correct route handled via method spoofing
+                    this.empModalOpen = true;
+                },
+                
+                // For View Detail Modal (existing)
+                viewModalOpen: false,
+                viewEmp: {}
+            }">
 
                 {{-- Section Header --}}
-                <div class="card-header">
+                <div class="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,11 +355,18 @@
                             Live
                         </span>
                     </div>
-                    <span class="text-xs text-gray-400">
-                        Page <strong class="text-gray-700">{{ $empPage }}</strong> of <strong class="text-gray-700">{{ $empPages }}</strong>
-                        &nbsp;·&nbsp;
-                        Showing {{ ($empPage - 1) * $perPage + 1 }}–{{ min($empPage * $perPage, $empTotal) }} of {{ $empTotal }}
-                    </span>
+                    
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs text-gray-400 hidden sm:inline-block">
+                            Page <strong class="text-gray-700">{{ $empPage }}</strong> of <strong class="text-gray-700">{{ $empPages }}</strong>
+                        </span>
+                        @can('manage-users')
+                        <button @click="openCreateEmp()" class="btn-lgu text-sm py-1.5 px-3 flex items-center gap-2 bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700 text-white">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Add Employee
+                        </button>
+                        @endcan
+                    </div>
                 </div>
 
                 {{-- Cards Grid --}}
@@ -220,22 +383,19 @@
                             $empId       = $emp['id'] ?? $emp['employee_id'] ?? '—';
                             $initials    = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));
                         @endphp
-                        <div
-                            class="group relative bg-white border border-gray-200 rounded-xl p-4 hover:border-lgu-blue hover:shadow-md transition-all duration-200 cursor-pointer"
-                            @click="modalEmp = {{ json_encode($emp) }}; modalOpen = true"
-                        >
+                        <div class="group relative bg-white border border-gray-200 rounded-xl p-4 hover:border-green-500 hover:shadow-md transition-all duration-200">
                             {{-- Row number --}}
                             <span class="absolute top-3 right-3 text-xs text-gray-300 font-mono">
                                 #{{ str_pad($globalIndex, 2, '0', STR_PAD_LEFT) }}
                             </span>
 
                             {{-- Avatar + Name --}}
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="w-11 h-11 rounded-full bg-lgu-blue flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm group-hover:bg-lgu-blue-mid transition-colors">
+                            <div class="flex items-center gap-3 mb-3 cursor-pointer" @click="viewEmp = {{ json_encode($emp) }}; viewModalOpen = true">
+                                <div class="w-11 h-11 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm group-hover:bg-green-700 transition-colors">
                                     {{ $initials ?: '??' }}
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-semibold text-gray-900 text-sm truncate leading-tight">
+                                    <p class="font-semibold text-gray-900 text-sm truncate leading-tight group-hover:text-green-700 transition-colors">
                                         {{ $fullName ?: '(No Name)' }}
                                     </p>
                                     <p class="text-xs text-gray-400 mt-0.5">ID: {{ $empId }}</p>
@@ -243,19 +403,33 @@
                             </div>
 
                             {{-- Email --}}
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
                                 <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 </svg>
                                 <span class="truncate">{{ $email }}</span>
                             </div>
 
-                            {{-- Footer hint --}}
-                            <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                <span class="text-xs text-lgu-blue font-medium group-hover:underline">View all details</span>
-                                <svg class="w-3.5 h-3.5 text-lgu-blue opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
+                            {{-- Footer Actions --}}
+                            <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+                                <button @click="viewEmp = {{ json_encode($emp) }}; viewModalOpen = true" class="text-xs text-green-600 font-medium hover:underline flex items-center gap-1">
+                                    View Details
+                                </button>
+                                
+                                @can('manage-users')
+                                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="openEditEmp({{ json_encode($emp) }})" class="p-1 text-gray-400 hover:text-green-600 transition rounded hover:bg-green-50" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </button>
+                                    <form method="POST" action="{{ route('employees.destroy', $empId) }}" onsubmit="return confirm('Are you sure you want to delete this employee from iHRIS?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1 text-gray-400 hover:text-red-600 transition rounded hover:bg-red-50" title="Delete">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                                @endcan
                             </div>
                         </div>
                     @endforeach
@@ -271,7 +445,7 @@
                     <div class="flex items-center gap-1">
                         @if($empPage > 1)
                             <a href="{{ request()->fullUrlWithQuery(['emp_page' => $empPage - 1]) }}"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-lgu-blue hover:text-lgu-blue transition">
+                               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-green-600 hover:text-green-600 transition">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                                 Prev
                             </a>
@@ -293,9 +467,9 @@
                         @endif
                         @for($p = $start; $p <= $end; $p++)
                             @if($p === $empPage)
-                                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-lgu-blue text-white border border-lgu-blue">{{ $p }}</span>
+                                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white border border-green-600">{{ $p }}</span>
                             @else
-                                <a href="{{ request()->fullUrlWithQuery(['emp_page' => $p]) }}" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-lgu-blue hover:text-lgu-blue transition">{{ $p }}</a>
+                                <a href="{{ request()->fullUrlWithQuery(['emp_page' => $p]) }}" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-green-600 hover:text-green-600 transition">{{ $p }}</a>
                             @endif
                         @endfor
                         @if($end < $empPages)
@@ -305,7 +479,7 @@
 
                         @if($empPage < $empPages)
                             <a href="{{ request()->fullUrlWithQuery(['emp_page' => $empPage + 1]) }}"
-                               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-lgu-blue hover:text-lgu-blue transition">
+                               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-green-600 hover:text-green-600 transition">
                                 Next
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
@@ -319,9 +493,9 @@
                 </div>
                 @endif
 
-                {{-- ── Employee Detail Modal ── --}}
+                {{-- Employee Detail View Modal (Read Only) --}}
                 <div
-                    x-show="modalOpen"
+                    x-show="viewModalOpen"
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0"
                     x-transition:enter-end="opacity-100"
@@ -330,15 +504,12 @@
                     x-transition:leave-end="opacity-0"
                     class="fixed inset-0 z-50 flex items-center justify-center p-4"
                     style="display:none"
-                    @click.self="modalOpen = false"
-                    @keydown.escape.window="modalOpen = false"
+                    @click.self="viewModalOpen = false"
+                    @keydown.escape.window="viewModalOpen = false"
                 >
-                    {{-- Backdrop --}}
                     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-
-                    {{-- Panel --}}
                     <div
-                        x-show="modalOpen"
+                        x-show="viewModalOpen"
                         x-transition:enter="transition ease-out duration-200"
                         x-transition:enter-start="opacity-0 scale-95 translate-y-4"
                         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -346,32 +517,16 @@
                         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
                         class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
-                        style="display:none"
                     >
-                        {{-- Modal Header --}}
-                        <div class="bg-lgu-blue px-6 py-4 flex items-center justify-between shrink-0">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">
-                                    <span x-text="((modalEmp.name ?? '').charAt(0) + (modalEmp.last_name ?? '').charAt(0)).toUpperCase() || '??'"></span>
-                                </div>
-                                <div>
-                                    <p class="text-white font-semibold text-sm leading-tight"
-                                       x-text="[modalEmp.name, modalEmp.middle_name, modalEmp.last_name, modalEmp.extension].filter(Boolean).join(' ') || '(No Name)'"></p>
-                                    <p class="text-white/60 text-xs mt-0.5" x-text="'Employee ID: ' + (modalEmp.id ?? '—')"></p>
-                                </div>
-                            </div>
-                            <button @click="modalOpen = false"
-                                    class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
+                        <div class="bg-green-600 px-6 py-4 flex items-center justify-between shrink-0">
+                            <h3 class="font-bold text-white text-lg">Employee Details</h3>
+                            <button @click="viewModalOpen = false" class="text-white/70 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                         </div>
-
-                        {{-- Modal Body --}}
                         <div class="overflow-y-auto flex-1 p-6">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <template x-for="[key, val] in Object.entries(modalEmp)" :key="key">
+                                <template x-for="[key, val] in Object.entries(viewEmp)" :key="key">
                                     <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
                                         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1"
                                            x-text="key.replace(/_/g, ' ')"></p>
@@ -384,11 +539,80 @@
                                 </template>
                             </div>
                         </div>
-
-                        {{-- Modal Footer --}}
                         <div class="px-6 py-4 border-t border-gray-100 shrink-0 flex justify-end">
-                            <button @click="modalOpen = false" class="btn-lgu text-sm">Close</button>
+                            <button @click="viewModalOpen = false" class="btn-outline text-sm">Close</button>
                         </div>
+                    </div>
+                </div>
+
+                {{-- Employee Create/Edit Modal --}}
+                <div
+                    x-show="empModalOpen"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style="display:none"
+                    @keydown.escape.window="empModalOpen = false"
+                >
+                    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="empModalOpen = false"></div>
+                    <div
+                        x-show="empModalOpen"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+                    >
+                        <div class="bg-green-600 px-6 py-4 flex items-center justify-between">
+                            <h3 class="font-bold text-white text-lg" x-text="isEdit ? 'Edit Employee' : 'Add New Employee'"></h3>
+                            <button @click="empModalOpen = false" class="text-white/70 hover:text-white transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        
+                        <form method="POST" :action="empActionUrl" class="p-6 space-y-4">
+                            @csrf
+                            <input type="hidden" name="_method" :value="isEdit ? 'PUT' : 'POST'">
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                    <input type="text" name="first_name" x-model="empForm.first_name" required class="lgu-input w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                                    <input type="text" name="middle_name" x-model="empForm.middle_name" class="lgu-input w-full">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                    <input type="text" name="last_name" x-model="empForm.last_name" required class="lgu-input w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Extension</label>
+                                    <input type="text" name="extension" x-model="empForm.extension" class="lgu-input w-full" placeholder="e.g. Jr.">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" x-model="empForm.email" required class="lgu-input w-full" placeholder="email@example.com">
+                            </div>
+
+                            <div class="pt-2 flex justify-end gap-3">
+                                <button type="button" @click="empModalOpen = false" class="btn-outline">Cancel</button>
+                                <button type="submit" class="btn-lgu bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700 text-white" 
+                                        x-text="isEdit ? 'Update Employee' : 'Add Employee'"></button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
