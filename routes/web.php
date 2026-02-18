@@ -14,9 +14,8 @@ Route::middleware([
     'verified',
 ])->group(function () {
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    // Dashboard
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // Offices Management — all authenticated users
     Route::get('/offices', [OfficeController::class, 'index'])->name('offices.index');

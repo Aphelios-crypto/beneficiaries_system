@@ -34,30 +34,7 @@
                 <div class="absolute top-0 left-0 right-0 h-1 bg-gold-gradient"></div>
 
                 <div class="relative z-10 flex flex-col sm:flex-row items-center gap-6 p-8">
-                    {{-- Seal --}}
-                    <div class="w-20 h-20 rounded-full bg-white/10 border-2 border-lgu-gold/40 flex items-center justify-center shrink-0">
-                        <svg viewBox="0 0 40 40" class="w-14 h-14" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="20" cy="20" r="19" fill="#003087" stroke="#C9A84C" stroke-width="2"/>
-                            <circle cx="20" cy="20" r="14" fill="none" stroke="#C9A84C" stroke-width="1"/>
-                            <g stroke="#F0C040" stroke-width="1.2" stroke-linecap="round">
-                                <line x1="20" y1="7" x2="20" y2="4"/>
-                                <line x1="27.5" y1="9.5" x2="29.5" y2="7.5"/>
-                                <line x1="33" y1="20" x2="36" y2="20"/>
-                                <line x1="27.5" y1="30.5" x2="29.5" y2="32.5"/>
-                                <line x1="20" y1="33" x2="20" y2="36"/>
-                                <line x1="12.5" y1="30.5" x2="10.5" y2="32.5"/>
-                                <line x1="7" y1="20" x2="4" y2="20"/>
-                                <line x1="12.5" y1="9.5" x2="10.5" y2="7.5"/>
-                            </g>
-                            <circle cx="20" cy="20" r="4" fill="#F0C040"/>
-                            <path d="M13 28 Q11 22 13 16" stroke="#2E7D32" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-                            <ellipse cx="12" cy="18" rx="1.5" ry="2.5" fill="#2E7D32" transform="rotate(-20 12 18)"/>
-                            <ellipse cx="11" cy="22" rx="1.5" ry="2.5" fill="#2E7D32" transform="rotate(-15 11 22)"/>
-                            <path d="M27 28 Q29 22 27 16" stroke="#2E7D32" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-                            <ellipse cx="28" cy="18" rx="1.5" ry="2.5" fill="#2E7D32" transform="rotate(20 28 18)"/>
-                            <ellipse cx="29" cy="22" rx="1.5" ry="2.5" fill="#2E7D32" transform="rotate(15 29 22)"/>
-                        </svg>
-                    </div>
+
                     <div>
                         <p class="text-lgu-gold-light text-sm font-semibold uppercase tracking-widest mb-1">Local Government Unit</p>
                         <h2 class="text-white text-3xl font-extrabold tracking-tight">Bayambang, Pangasinan</h2>
@@ -87,7 +64,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Offices</p>
-                            <p class="text-2xl font-bold text-lgu-blue mt-0.5">—</p>
+                            <p class="text-2xl font-bold text-lgu-blue mt-0.5">{{ $officesCount }}</p>
                             <p class="text-xs text-gray-400 mt-0.5">From iHRIS API</p>
                         </div>
                     </div>

@@ -20,30 +20,8 @@
 
             <div class="relative z-10 text-center">
                 {{-- Seal --}}
-                <div class="w-36 h-36 rounded-full bg-white/10 border-4 border-lgu-gold/50 flex items-center justify-center mx-auto mb-8 shadow-2xl backdrop-blur-sm">
-                    <svg viewBox="0 0 80 80" class="w-28 h-28" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="40" cy="40" r="38" fill="#003087" stroke="#C9A84C" stroke-width="3"/>
-                        <circle cx="40" cy="40" r="28" fill="none" stroke="#C9A84C" stroke-width="1.5"/>
-                        <g stroke="#F0C040" stroke-width="2" stroke-linecap="round">
-                            <line x1="40" y1="13" x2="40" y2="8"/>
-                            <line x1="55" y1="18" x2="59" y2="14"/>
-                            <line x1="67" y1="40" x2="72" y2="40"/>
-                            <line x1="55" y1="62" x2="59" y2="66"/>
-                            <line x1="40" y1="67" x2="40" y2="72"/>
-                            <line x1="25" y1="62" x2="21" y2="66"/>
-                            <line x1="13" y1="40" x2="8" y2="40"/>
-                            <line x1="25" y1="18" x2="21" y2="14"/>
-                        </g>
-                        <circle cx="40" cy="40" r="8" fill="#F0C040"/>
-                        <circle cx="40" cy="40" r="4" fill="#C9A84C"/>
-                        <path d="M26 58 Q24 44 26 32" stroke="#2E7D32" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="23" cy="36" rx="3" ry="5" fill="#2E7D32" transform="rotate(-20 23 36)"/>
-                        <ellipse cx="22" cy="44" rx="3" ry="5" fill="#2E7D32" transform="rotate(-15 22 44)"/>
-                        <path d="M54 58 Q56 44 54 32" stroke="#2E7D32" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="57" cy="36" rx="3" ry="5" fill="#2E7D32" transform="rotate(20 57 36)"/>
-                        <ellipse cx="58" cy="44" rx="3" ry="5" fill="#2E7D32" transform="rotate(15 58 44)"/>
-                        <path d="M 24 62 Q 40 70 56 62" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
-                    </svg>
+                <div class="w-36 h-36 rounded-full bg-white/10 border-4 border-lgu-gold/50 flex items-center justify-center mx-auto mb-8 shadow-2xl backdrop-blur-sm overflow-hidden">
+                    <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="LGU Seal">
                 </div>
 
                 <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">LGU Bayambang</h1>
@@ -65,12 +43,8 @@
 
             {{-- Mobile logo --}}
             <div class="lg:hidden text-center mb-8">
-                <div class="w-20 h-20 rounded-full bg-lgu-blue border-4 border-lgu-gold/50 flex items-center justify-center mx-auto mb-4 shadow-lgu-lg">
-                    <svg viewBox="0 0 40 40" class="w-14 h-14" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="20" cy="20" r="19" fill="#003087" stroke="#C9A84C" stroke-width="2"/>
-                        <circle cx="20" cy="20" r="8" fill="#F0C040"/>
-                        <circle cx="20" cy="20" r="4" fill="#C9A84C"/>
-                    </svg>
+                <div class="w-20 h-20 rounded-full bg-lgu-blue border-4 border-lgu-gold/50 flex items-center justify-center mx-auto mb-4 shadow-lgu-lg overflow-hidden">
+                    <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="LGU Seal">
                 </div>
                 <h1 class="text-2xl font-bold text-lgu-blue">LGU Bayambang</h1>
                 <p class="text-gray-500 text-sm">Beneficiaries Financial Management System</p>
