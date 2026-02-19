@@ -78,16 +78,39 @@ class OfficeController extends Controller
             return response()->json(['employees' => [], 'error' => 'Office not found']);
         }
 
-        // 2. Fetch Employees using the NEW endpoint provided by user
-        // Endpoint: /all-employees/office/{officeUuid}
-        $endpoint = "/all-employees/office/{$targetUuid}";
-        
-        $result = $this->ihris->get($endpoint, $token);
+        // 2. Fetch Employees using the aggregated list (includes DOB and OJTs)
+        $cacheKey = 'ihris_employees_aggregated';
+        $result   = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        if (! $result) {
+            $result = $this->ihris->getAllEmployeesIncludingOjts($token);
+            if ($result['success'] && !empty($result['data'])) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, 600);
+            }
+        }
 
         if (!$result['success']) {
             return response()->json(['employees' => [], 'error' => $result['message']]);
         }
 
-        return response()->json(['employees' => $result['data'] ?? []]);
+        // 3. Filter employees belonging to this office
+        $targetOfficeName = null;
+        foreach ($offices as $office) {
+            if (($office['uuid'] ?? '') === $targetUuid) {
+                $targetOfficeName = $office['name'] ?? $office['office_name'] ?? null;
+                break;
+            }
+        }
+
+        $allEmps = $result['data'] ?? [];
+        $officeEmps = array_filter($allEmps, function ($emp) use ($targetOfficeName, $targetUuid) {
+            $empOfficeName = $emp['office_name'] ?? $emp['office'] ?? '';
+            $empOfficeUuid = $emp['office_uuid'] ?? null;
+            
+            return ($targetOfficeName && stripos($empOfficeName, $targetOfficeName) !== false)
+                || ($empOfficeUuid === $targetUuid);
+        });
+
+        return response()->json(['employees' => array_values($officeEmps)]);
     }
 }

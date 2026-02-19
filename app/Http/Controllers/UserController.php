@@ -42,7 +42,16 @@ class UserController extends Controller
         $apiError  = null;
 
         if ($token) {
-            $result    = $this->ihris->getEmployees($token);
+            $cacheKey = 'ihris_employees_aggregated';
+            $result   = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+            if (! $result) {
+                $result = $this->ihris->getAllEmployeesIncludingOjts($token);
+                if ($result['success'] && !empty($result['data'])) {
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $result, 600);
+                }
+            }
+
             $allEmps   = $result['data'] ?? [];
             $apiError  = $result['success'] ? null : $result['message'];
 

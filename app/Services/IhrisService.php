@@ -292,4 +292,79 @@ class IhrisService
             ];
         }
     }
+
+    /**
+     * Fetch all employees from ALL offices using the special endpoint /all-employees/office/{uuid}.
+     * Merges global list (for DOB) with office lists (for OJTs and richer office data).
+     *
+     * @param  string  $token
+     * @return array{success: bool, data: array, message: string}
+     */
+    public function getAllEmployeesIncludingOjts(string $token): array
+    {
+        // 1. Fetch Global Employees
+        $globalResult = $this->getEmployees($token);
+        $globalEmps = $globalResult['data'] ?? [];
+        
+        $allEmployees = [];
+        foreach ($globalEmps as $emp) {
+            $key = $emp['uuid'] ?? $emp['id'] ?? uniqid();
+            
+            // Fix: If dob is 1970-01-01, it is placeholder data for empty
+            if (isset($emp['dob']) && $emp['dob'] === '1970-01-01') {
+                $emp['dob'] = null;
+            }
+            
+            $allEmployees[$key] = $emp;
+        }
+
+        // 2. Fetch Offices
+        $officesResult = $this->getOffices($token);
+        $offices = $officesResult['data'] ?? [];
+        $uuids = array_filter(array_column($offices, 'uuid'));
+        
+        if (empty($uuids)) {
+             return [
+                'success' => true,
+                'data'    => array_values($allEmployees),
+                'message' => 'Returning global employees only.',
+            ];
+        }
+
+        // 3. Parallel Fetching for Office Staff (includes OJTs)
+        $baseUrl = $this->baseUrl;
+        $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($uuids, $token, $baseUrl) {
+            $reqs = [];
+            foreach ($uuids as $uuid) {
+                $reqs[] = $pool->withToken($token)->acceptJson()->get("{$baseUrl}/all-employees/office/{$uuid}");
+            }
+            return $reqs;
+        });
+
+        // 4. Merge Office Data
+        foreach ($responses as $resp) {
+            if ($resp->successful()) {
+                $data = $resp->json();
+                if (!is_array($data)) continue;
+
+                foreach ($data as $emp) {
+                    $key = $emp['uuid'] ?? $emp['id'] ?? uniqid();
+                    
+                    if (isset($allEmployees[$key])) {
+                        // Merge and preserve global DOB if office record lacks it
+                        $allEmployees[$key] = array_merge($allEmployees[$key], $emp);
+                    } else {
+                        // Potential OJT
+                        $allEmployees[$key] = $emp;
+                    }
+                }
+            }
+        }
+
+        return [
+            'success' => true,
+            'data'    => array_values($allEmployees),
+            'message' => 'Successfully aggregated and merged employee details.',
+        ];
+    }
 }
