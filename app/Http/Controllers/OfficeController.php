@@ -30,14 +30,6 @@ class OfficeController extends Controller
 
         $offices = $result['data'] ?? [];
 
-        // Fetch employees to find the linking field
-        $empResult = $this->ihris->getEmployees($token);
-        $employees = $empResult['data'] ?? [];
-
-        if (!empty($employees)) {
-            \Illuminate\Support\Facades\Log::info('First Employee Structure:', (array)$employees[0]);
-        }
-
         // Client-side search filter
         if ($search) {
             $offices = array_filter($offices, function ($office) use ($search) {
@@ -63,8 +55,38 @@ class OfficeController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Attempt 1: Standard RESTful nested resource (common in iHRIS implementations)
-        $result = $this->ihris->get("/offices/{$id}/employees", $token);
+        // 1. Get Target Office UUID
+        // We need the office UUID to query the specific endpoint
+        $officesResult = $this->ihris->getOffices($token);
+        $offices = $officesResult['data'] ?? [];
+        $targetUuid = null;
+        
+        foreach ($offices as $office) {
+            // Check ID first
+            if (isset($office['id']) && (string)$office['id'] === (string)$id) {
+                $targetUuid = $office['uuid'] ?? null;
+                break;
+            }
+            // Fallback to checking if ID passed IS the UUID
+            if (($office['uuid'] ?? '') === $id) {
+                $targetUuid = $office['uuid'];
+                break;
+            }
+        }
+
+        if (!$targetUuid) {
+            return response()->json(['employees' => [], 'error' => 'Office not found']);
+        }
+
+        // 2. Fetch Employees using the NEW endpoint provided by user
+        // Endpoint: /all-employees/office/{officeUuid}
+        $endpoint = "/all-employees/office/{$targetUuid}";
+        
+        $result = $this->ihris->get($endpoint, $token);
+
+        if (!$result['success']) {
+            return response()->json(['employees' => [], 'error' => $result['message']]);
+        }
 
         return response()->json(['employees' => $result['data'] ?? []]);
     }
