@@ -18,7 +18,18 @@ Route::middleware([
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // Offices Management — all authenticated users
+    // Live View (API)
     Route::get('/offices', [OfficeController::class, 'index'])->name('offices.index');
+    
+    // Super Admin Management (Local DB)
+    Route::middleware('role:Super Admin')->group(function () {
+        Route::get('/offices/manage', [OfficeController::class, 'manage'])->name('offices.manage');
+        Route::post('/offices', [OfficeController::class, 'store'])->name('offices.store');
+        Route::put('/offices/{office}', [OfficeController::class, 'update'])->name('offices.update');
+        Route::delete('/offices/{office}', [OfficeController::class, 'destroy'])->name('offices.destroy');
+        Route::post('/offices/sync', [OfficeController::class, 'sync'])->name('offices.sync');
+    });
+
     Route::get('/offices/{id}/employees', [OfficeController::class, 'employees'])->name('offices.employees');
 
     // User Management — Super Admin and Admin only

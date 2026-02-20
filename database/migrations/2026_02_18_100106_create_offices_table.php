@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('offices', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('code')->nullable();
+            $table->string('head')->nullable();
+            $table->string('uuid')->nullable()->index(); // for iHRIS sync
             $table->timestamps();
         });
     }
