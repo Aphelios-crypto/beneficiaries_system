@@ -6,7 +6,7 @@
                 <p class="text-white/60 text-sm mt-0.5">Create, edit, and delete local office records</p>
             </div>
             
-            <div class="flex gap-2">
+            <div class="flex gap-2" x-data>
                 <a href="{{ route('offices.index') }}" class="btn-outline text-white border-white/20 hover:bg-white/10">
                     Back to Live View
                 </a>
@@ -17,7 +17,7 @@
                         Sync iHRIS
                     </button>
                 </form>
-                <button @click="createOffice()" class="bg-lgu-gold hover:bg-yellow-400 text-lgu-blue border border-yellow-300 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition shadow-lg">
+                <button @click="$dispatch('open-create-office-modal')" class="bg-lgu-gold hover:bg-yellow-400 text-lgu-blue border border-yellow-300 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition shadow-lg">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Add Office
                 </button>
@@ -25,7 +25,9 @@
         </div>
     </x-slot>
 
-    <div class="py-8" x-data="{
+    <div class="py-8" 
+        @open-create-office-modal.window="createOffice()"
+        x-data="{
         staffModalOpen: false,
         officeModalOpen: false,
         deleteModalOpen: false,
