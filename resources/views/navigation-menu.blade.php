@@ -79,7 +79,26 @@
                         <div class="border-t border-gray-100"></div>
                         <form method="POST" action="{{ route('logout') }}" x-data>
                             @csrf
-                            <x-dropdown-link href="{{ route('logout') }}" @click.prevent="$root.submit();" class="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <x-dropdown-link href="{{ route('logout') }}"
+                                @click.prevent="Swal.fire({
+                                    title: 'Sign Out?',
+                                    text: 'Are you sure you want to exit the system?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#1e3a8a',
+                                    confirmButtonText: 'Sign Out',
+                                    cancelButtonText: 'Cancel',
+                                    customClass: {
+                                        confirmButton: 'rounded-lg px-4 py-2',
+                                        cancelButton: 'rounded-lg px-4 py-2'
+                                    }
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        $root.submit();
+                                    }
+                                });"
+                                class="text-red-600 hover:text-red-700 hover:bg-red-50">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                                 {{ __('Sign Out') }}
                             </x-dropdown-link>
@@ -134,7 +153,21 @@
             </a>
             <form method="POST" action="{{ route('logout') }}" x-data>
                 @csrf
-                <button @click.prevent="$root.submit()" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-300 hover:bg-red-900/30 hover:text-red-200 transition mt-1">
+                <button @click.prevent="Swal.fire({
+                        title: 'Sign Out?',
+                        text: 'Are you sure you want to exit the system?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#1e3a8a',
+                        cancelButtonColor: '#ef4444',
+                        confirmButtonText: 'Yes, Sign Out',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $root.submit();
+                        }
+                    });"
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-300 hover:bg-red-900/30 hover:text-red-200 transition mt-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                     Sign Out
                 </button>
