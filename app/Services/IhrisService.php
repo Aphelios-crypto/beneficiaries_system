@@ -220,7 +220,7 @@ class IhrisService
      */
     public function updateEmployee(string $token, string $id, array $data): array
     {
-        return $this->send('put', "/employees/{$id}", $token, $data);
+        return $this->send('patch', "/employee/{$id}", $token, $data);
     }
 
     /**
@@ -232,7 +232,7 @@ class IhrisService
      */
     public function deleteEmployee(string $token, string $id): array
     {
-        return $this->send('delete', "/employees/{$id}", $token);
+        return $this->send('delete', "/employee/{$id}", $token);
     }
 
     /**

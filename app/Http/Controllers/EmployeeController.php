@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\IhrisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class EmployeeController extends Controller
 {
@@ -15,7 +16,7 @@ class EmployeeController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email',
+            'email'      => 'nullable|email',
         ]);
 
         $token = Auth::user()->ihris_token;
@@ -28,6 +29,7 @@ class EmployeeController extends Controller
         ]));
 
         if ($result['success']) {
+            Cache::forget('ihris_employees_aggregated');
             return back()->with('success', 'Employee created successfully in iHRIS.');
         }
 
@@ -39,7 +41,7 @@ class EmployeeController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email',
+            'email'      => 'nullable|email',
         ]);
 
         $token = Auth::user()->ihris_token;
@@ -52,6 +54,7 @@ class EmployeeController extends Controller
         ]));
 
         if ($result['success']) {
+            Cache::forget('ihris_employees_aggregated');
             return back()->with('success', 'Employee updated successfully in iHRIS.');
         }
 
@@ -68,6 +71,7 @@ class EmployeeController extends Controller
         $result = $this->ihris->deleteEmployee($token, $id);
 
         if ($result['success']) {
+            Cache::forget('ihris_employees_aggregated');
             return back()->with('success', 'Employee deleted successfully from iHRIS.');
         }
 
