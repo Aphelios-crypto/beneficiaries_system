@@ -360,10 +360,45 @@ class IhrisService
                 }
             }
         }
+        
+        // 5. Final De-duplication: handles cases where iHRIS has duplicate records for the same person
+        // Logic: Group by normalized full name and pick the 'best' record (prefer with email, then lower ID)
+        $deduped = [];
+        foreach ($allEmployees as $emp) {
+            $fname = strtolower(trim($emp['first_name'] ?? $emp['name'] ?? ''));
+            $lname = strtolower(trim($emp['last_name'] ?? $emp['surname'] ?? ''));
+            $mname = strtolower(trim($emp['middle_name'] ?? ''));
+            
+            // Signature: concat names to identify the person
+            $sig = "{$fname}|{$mname}|{$lname}";
+            
+            if (!isset($deduped[$sig])) {
+                $deduped[$sig] = $emp;
+            } else {
+                $existing = $deduped[$sig];
+                
+                $hasEmailNew = !empty($emp['email']);
+                $hasEmailOld = !empty($existing['email']);
+                
+                $idNew = (int) ($emp['id'] ?? $emp['employee_id'] ?? 999999);
+                $idOld = (int) ($existing['id'] ?? $existing['employee_id'] ?? 999999);
+
+                // Preference logic:
+                // 1. If new has email and old doesn't, take new.
+                // 2. If both have or both lack email, take the one with smaller ID.
+                if ($hasEmailNew && !$hasEmailOld) {
+                    $deduped[$sig] = $emp;
+                } elseif (($hasEmailNew === $hasEmailOld) && ($idNew < $idOld)) {
+                    $deduped[$sig] = $emp;
+                }
+            }
+        }
+        
+        $finalEmployees = array_values($deduped);
 
         return [
             'success' => true,
-            'data'    => array_values($allEmployees),
+            'data'    => $finalEmployees,
             'message' => 'Successfully aggregated and merged employee details.',
         ];
     }
