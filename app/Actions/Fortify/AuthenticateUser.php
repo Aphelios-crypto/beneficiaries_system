@@ -40,8 +40,8 @@ class AuthenticateUser
         $result = $this->ihris->login($email, $password);
 
         if (! $result['success']) {
-            Log::info('iHRIS authentication failed for user.', ['email' => $email]);
-            return null;
+            Log::info('iHRIS authentication failed for user. Falling back to local authentication.', ['email' => $email]);
+            return $this->authenticateLocally($email, $password);
         }
 
         // Upsert the local user record so Fortify can create a session
